@@ -85,7 +85,7 @@ class Client implements ClientInterface
                         $this->logger->error('Connect to Apollo server failed');
                     }
                 }
-                return $this->formatResult($result);
+                return $this->formatResult($result, $namespace);
             }, $namespace);
         }
         return $parallel->wait();
