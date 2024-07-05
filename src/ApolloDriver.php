@@ -160,7 +160,6 @@ class ApolloDriver extends AbstractDriver
         }
         unset($config);
         foreach ($mergedConfigs as $key => $value) {
-            if (is_array($value)) $this->config->set($key, []);
             $this->config->set($key, $value);
             $this->logger->debug(sprintf('Config [%s] is updated', $key));
         }
