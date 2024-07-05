@@ -19,6 +19,7 @@ use Hyperf\Contract\StdoutLoggerInterface;
 use Hyperf\Coroutine\Parallel;
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
+use Symfony\Component\Yaml\Yaml;
 
 class Client implements ClientInterface
 {
@@ -84,7 +85,7 @@ class Client implements ClientInterface
                         $this->logger->error('Connect to Apollo server failed');
                     }
                 }
-                return $result;
+                return $this->formatResult($result);
             }, $namespace);
         }
         return $parallel->wait();
@@ -139,4 +140,75 @@ class Client implements ClientInterface
         $signature = base64_encode(hash_hmac('sha1', $toSignature, $this->option->getSecret(), true));
         return sprintf('Apollo %s:%s', $this->option->getAppid(), $signature);
     }
+
+    private function formatResult($result, $namespace)
+    {
+        $config = [];
+        $temp = explode('.', $namespace);
+        $key = reset($temp);
+        $end = end($temp);
+
+        $config[$key] = match ($end) {
+            'yml', 'yaml' => $this->ymlToArray($result),
+            'json', => $this->jsonToArray($result),
+            'txt','xml' => $result,
+            default => $this->propertiesToArray($result),
+        };
+
+        return $config;
+    }
+
+    private function propertiesToArray($config)
+    {
+        $result = [];
+        foreach ($config as $key => $value) {
+            $keys = explode('.', $key);
+            $temp = &$result;
+            foreach ($keys as $innerKey) {
+                if (!isset($temp[$innerKey])) {
+                    $temp[$innerKey] = [];
+                }
+                $temp = &$temp[$innerKey];
+            }
+            $temp = $this->formatPropertiesValue($value);
+        }
+        return $result;
+    }
+
+    protected function formatPropertiesValue($value)
+    {
+        switch (strtolower($value)) {
+            case 'true':
+            case '(true)':
+                return true;
+            case 'false':
+            case '(false)':
+                return false;
+            case 'empty':
+            case '(empty)':
+                return '';
+            case '[]':
+            case 'array()':
+                return [];
+            case 'null':
+            case '(null)':
+                return;
+        }
+        if (is_numeric($value)) {
+            $value = (strpos($value, '.') === false) ? (int)$value : (float)$value;
+        }
+        return $value;
+    }
+
+    private function ymlToArray($config)
+    {
+        return Yaml::parse($config['content'] ?? "");
+    }
+
+
+    private function jsonToArray($config)
+    {
+        return json_decode($config['content'] ?? "", true);
+    }
+
 }

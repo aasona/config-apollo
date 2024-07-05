@@ -150,34 +150,6 @@ class ApolloDriver extends AbstractDriver
         return $this->client->pull();
     }
 
-    protected function formatValue($value)
-    {
-        if (! $this->config->get('config_center.drivers.apollo.strict_mode', false)) {
-            return $value;
-        }
-
-        switch (strtolower($value)) {
-            case 'true':
-            case '(true)':
-                return true;
-            case 'false':
-            case '(false)':
-                return false;
-            case 'empty':
-            case '(empty)':
-                return '';
-            case 'null':
-            case '(null)':
-                return;
-        }
-
-        if (is_numeric($value)) {
-            $value = (strpos($value, '.') === false) ? (int) $value : (float) $value;
-        }
-
-        return $value;
-    }
-
     protected function updateConfig(array $config): void
     {
         $mergedConfigs = [];
@@ -188,7 +160,8 @@ class ApolloDriver extends AbstractDriver
         }
         unset($config);
         foreach ($mergedConfigs as $key => $value) {
-            $this->config->set($key, $this->formatValue($value));
+            if (is_array($value)) $this->config->set($key, []);
+            $this->config->set($key, $value);
             $this->logger->debug(sprintf('Config [%s] is updated', $key));
         }
     }
