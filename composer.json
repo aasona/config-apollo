@@ -1,5 +1,5 @@
 {
-    "name": "upsec/hyperf-config-apollo",
+    "name": "hyperf/config-apollo-upsec",
     "description": "An apollo adapter for Hyperf config component.",
     "license": "MIT",
     "keywords": [
